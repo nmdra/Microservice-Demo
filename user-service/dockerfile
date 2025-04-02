@@ -1,0 +1,27 @@
+# Use a lightweight Golang base image for building
+FROM golang:alpine AS builder
+
+WORKDIR /app
+
+# Copy go.mod and go.sum to leverage caching for dependencies
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the application with optimizations
+RUN go build -ldflags="-s -w" -o main .
+
+# Use the minimal scratch image for production
+FROM scratch AS production
+
+WORKDIR /app
+
+# Copy the built binary from the builder stage
+COPY --from=builder /app/main .
+
+# Run the application
+CMD ["/app/main"]
